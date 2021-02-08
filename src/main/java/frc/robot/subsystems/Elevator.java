@@ -5,8 +5,7 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
-import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DigitalOutput;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.BatterySim;
@@ -48,7 +47,7 @@ public class Elevator extends SubsystemBase {
     Hardware.encoder.setDistancePerPulse(Constants.Distance_PER_PULSE);
     Hardware.encoderSim = new EncoderSim(Hardware.encoder);
 
-    Hardware.limitSwitch = new DigitalInput(2);
+    Hardware.limitSwitch = new DigitalOutput(2);
 
     errorSum = lastError = lastTime = 0.0;
   }
@@ -58,7 +57,7 @@ public class Elevator extends SubsystemBase {
     double pidOutput = calc(move);
     
     Hardware.right.set(pidOutput);
-    
+
     if(!Robot.isRobotConnected())
     {
       Hardware.simulation.setInput(Hardware.right.getMotorOutputVoltage());
@@ -78,6 +77,11 @@ public class Elevator extends SubsystemBase {
     SmartDashboard.putNumber("Error", lastError);
     SmartDashboard.putNumber("Motor Output [-1, 1]", Hardware.right.getMotorOutputPercent());
     SmartDashboard.putNumber("Elevator Position", getDistance());
+
+    if(getDistance() == 0)
+      Hardware.limitSwitch.set(true);
+    else
+      Hardware.limitSwitch.set(false);
   }
 
   public double calc(Constants.MOVE move)
