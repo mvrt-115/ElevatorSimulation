@@ -93,7 +93,7 @@ public class Elevator extends SubsystemBase {
     lastError = error;
     lastTime = currTime;
 
-    return output;
+    return Hardware.limitSwitch.get() == true && output < 0 ? 0.0 : output;
   }
 
   public double getDistance()
