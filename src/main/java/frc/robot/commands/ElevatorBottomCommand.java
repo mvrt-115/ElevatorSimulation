@@ -4,9 +4,11 @@
 
 package frc.robot.commands;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Robot;
 import frc.robot.Constants;
+import frc.robot.Hardware;
 
 public class ElevatorBottomCommand extends CommandBase {
   /** Creates a new ElevatorBottomCommand. */
@@ -28,11 +30,14 @@ public class ElevatorBottomCommand extends CommandBase {
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted) {}
+  public void end(boolean interrupted) {
+    SmartDashboard.putNumber("Error", 0);
+    SmartDashboard.putBoolean("Limit Switch", Hardware.limitSwitch.get());
+  }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return false;
+    return Hardware.limitSwitch.get();
   }
 }
