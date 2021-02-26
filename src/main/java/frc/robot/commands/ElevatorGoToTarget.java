@@ -5,25 +5,24 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.Constants;
 import frc.robot.Robot;
 
-public class ElevatorMiddleCommand extends CommandBase {
-  /** Creates a new ElevatorMiddleCommand. */
-  public ElevatorMiddleCommand() {
-    // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(Robot.getElevator());
+public class ElevatorGoToTarget extends CommandBase {
+  double target;
+  /** Creates a new ElevatorGoToTarget. */
+  public ElevatorGoToTarget(double target) {
+    addRequirements(Robot.elevator);
+    this.target = target;
   }
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {
-  }
+  public void initialize() {}
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    Robot.getElevator().move(Constants.MOVE.MIDDLE);
+    Robot.elevator.setOutput(Robot.elevator.getMotorOutput(target));
   }
 
   // Called once the command ends or is interrupted.

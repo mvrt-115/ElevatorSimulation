@@ -15,33 +15,21 @@ import edu.wpi.first.wpilibj.util.Units;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-    public static final double CARRIAGE_MASS = convertPoundsToKg(15);
-    public static final double GEAR_REDUCTION = 10.0;
-    public static final double PULLEY_RADIUS = Units.inchesToMeters(2);
-    public static final double MIN_HEIGHT = 0.0, MAX_HEIGHT = Units.inchesToMeters(11 * 12);
-    public static final double TICKS_PER_ROTATION = 4096;
-    public static final double Distance_PER_PULSE = 2.0 * Math.PI * PULLEY_RADIUS / GEAR_REDUCTION / TICKS_PER_ROTATION;
+    public static class SimConstants {
+        public static final double MASS = poundsToKg(15);
+        public static final double BOTTOM = 0;
+        public static final double MIDDLE = Units.feetToMeters(6);
+        public static final double TOP = Units.feetToMeters(11);
+        public static final double GEAR_RATIO = 10;
+        public static final double PULLEY_RADIUS = Units.inchesToMeters(2);
+        public static final double kP = 1;
+        public static final double kI = 0.004;
+        public static final double kD = 0.4;
+        public static final double DISTANCE_PER_PULSE = 2.0 * Math.PI * PULLEY_RADIUS / GEAR_RATIO / 4096;
 
-    public static final double kP = 1, kD = 0.4, kI = 0.004;
-
-    public static enum MOVE 
-    {
-        BOTTOM(0.0), MIDDLE(2.0), TOP(3.0);
-
-        private double value;
-
-        private MOVE(double value)
-        {
-           this.value = value;
+        public static double poundsToKg(double pounds) {
+            return pounds / 2.205;
         }
-
-		public double getValue() {
-			return value;
-		}
-    };
-
-    private static double convertPoundsToKg(double pounds)
-    {
-        return pounds * 0.45359237; 
     }
+    
 }

@@ -4,109 +4,113 @@
 
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import edu.wpi.first.wpilibj.DigitalOutput;
+
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.simulation.BatterySim;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj.simulation.EncoderSim;
-import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Hardware;
-import frc.robot.Robot;
 
 public class Elevator extends SubsystemBase {
-
-  private double errorSum, lastError, lastTime;
+  double totalError;
+  double time;
+  double prevError;
+  double gravityCompensation;
 
   /** Creates a new Elevator. */
   public Elevator() {
+    Hardware.Elevator.left = new WPI_TalonSRX(1);
+    Hardware.Elevator.right = new WPI_TalonSRX(2);
+
+    Hardware.Elevator.encoder = new Encoder(0, 1);
+
+    Hardware.Elevator.gearbox = DCMotor.getVex775Pro(2);
+
+    Hardware.Elevator.sim = new ElevatorSim(
+      Hardware.Elevator.gearbox, 
+      Constants.SimConstants.GEAR_RATIO, 
+      Constants.SimConstants.MASS, 
+      Constants.SimConstants.PULLEY_RADIUS, 
+      Constants.SimConstants.BOTTOM, 
+      Constants.SimConstants.TOP
+    );
+
+    Hardware.Elevator.limitSwitch = new DigitalInput(3);
+
+    Hardware.Elevator.left.configFactoryDefault();
+    Hardware.Elevator.right.configFactoryDefault();
+
+    Hardware.Elevator.left.follow(Hardware.Elevator.right);
+
+    Hardware.Elevator.encoder.reset();
+    Hardware.Elevator.encoder.setDistancePerPulse(Constants.SimConstants.DISTANCE_PER_PULSE);
+
+    Hardware.Elevator.encoderSim = new EncoderSim(Hardware.Elevator.encoder);
+
+    time = 0;
+    totalError = 0;
+    prevError = 0;
+    gravityCompensation = 0.1;
+  }
+
+  public double getMotorOutput(double target) {
+    double error = target - Hardware.Elevator.encoder.getDistance();
+    double timePassed = Timer.getFPGATimestamp() - time;
+
+    double errorRate = (error - prevError) / timePassed;
+    prevError = error;
+
+    totalError += error * timePassed;
+
+    double output = Constants.SimConstants.kP * error + Constants.SimConstants.kI * totalError + Constants.SimConstants.kD * errorRate /* + gravityCompensation */;
+
+    if(output > 0)
+      output = Math.min(1, output);
   
-    Hardware.gearbox = DCMotor.getVex775Pro(2);
-    Hardware.simulation = new ElevatorSim(Hardware.gearbox, Constants.GEAR_REDUCTION, Constants.CARRIAGE_MASS,
-      Constants.PULLEY_RADIUS, Constants.MIN_HEIGHT, Constants.MAX_HEIGHT);
-
-    Hardware.left = new WPI_TalonSRX(0);
-    Hardware.right = new WPI_TalonSRX(1);
-
-    Hardware.left.configFactoryDefault();
-    Hardware.right.configFactoryDefault();
-
-    Hardware.left.setInverted(true);
-    Hardware.right.setInverted(false);
-
-    Hardware.left.follow(Hardware.right);
-    Hardware.right.setSelectedSensorPosition(0);
+    else if(output < 1)
+      output = Math.max(-1, output);
     
-    Hardware.encoder = new Encoder(0, 1);
-    Hardware.encoder.reset();
-    Hardware.encoder.setDistancePerPulse(Constants.Distance_PER_PULSE);
-    Hardware.encoderSim = new EncoderSim(Hardware.encoder);
+    prevError = error;
+    time = Timer.getFPGATimestamp();
 
-    Hardware.limitSwitch = new DigitalOutput(2);
+    // if(Hardware.Elevator.limitSwitch.get())
+    //   return 0;
 
-    errorSum = lastError = lastTime = 0.0;
+    return output;
   }
 
-  public void move(Constants.MOVE move)
-  {
-    double pidOutput = calc(move);
+  public void setOutput(double output) {
+    Hardware.Elevator.right.set(ControlMode.PercentOutput, output);
+    Hardware.Elevator.sim.setInput(RobotController.getBatteryVoltage() * output);
+  }
+
+  public void stop() {
+    setOutput(0);
+  }
+
+  public void simulationPeriodic() {
+    super.simulationPeriodic();
+
+    Hardware.Elevator.sim.update(0.02);
     
-    Hardware.right.set(pidOutput);
+    Hardware.Elevator.sim.setInput(Hardware.Elevator.right.getMotorOutputVoltage());
+    Hardware.Elevator.encoderSim.setDistance(Hardware.Elevator.sim.getPositionMeters());
 
-    if(!Robot.isRobotConnected())
-    {
-      Hardware.simulation.setInput(Hardware.right.getMotorOutputVoltage());
-      Hardware.simulation.update(0.020);
-      Hardware.encoderSim.setDistance(Hardware.simulation.getPositionMeters());
-      RoboRioSim.setVInVoltage(BatterySim.calculateDefaultBatteryLoadedVoltage(Hardware.simulation.getCurrentDrawAmps()));
-      
-      SmartDashboard.putNumber("Elevator Velocity", Hardware.simulation.getVelocityMetersPerSecond());
-    }
-    else
-    {
-      SmartDashboard.putNumber("Elevator Velocity", Hardware.right.getSelectedSensorVelocity());
-    }
-    SmartDashboard.putBoolean("Limit Switch", Hardware.limitSwitch.get());
-    SmartDashboard.putString("Elevator State", move.name());
-    SmartDashboard.putNumber("Setpoint", move.getValue());
-    SmartDashboard.putNumber("Error", lastError);
-    SmartDashboard.putNumber("Motor Output [-1, 1]", Hardware.right.getMotorOutputPercent());
-    SmartDashboard.putNumber("Elevator Position", getDistance());
-
-    if(getDistance() == 0)
-      Hardware.limitSwitch.set(true);
-    else
-      Hardware.limitSwitch.set(false);
-  }
-
-  public double calc(Constants.MOVE move)
-  {
-    double error = move.getValue() - getDistance();
-    double currTime = Timer.getFPGATimestamp();
-    double dt = currTime - lastTime;
-
-    errorSum += error;
-
-    double output = Constants.kP * error + Constants.kI * errorSum + Constants.kD * (error - lastError)/(dt);
-
-    lastError = error;
-    lastTime = currTime;
-
-    return Hardware.limitSwitch.get() == true && output < 0 ? 0.0 : output;
-  }
-
-  public double getDistance()
-  {
-    return Hardware.encoder.getDistance();
+    SmartDashboard.putNumber("Previous Error", prevError);
+    SmartDashboard.putNumber("Motor Output", Hardware.Elevator.right.getMotorOutputPercent());
+    SmartDashboard.putNumber("Distance Traveled", Hardware.Elevator.sim.getPositionMeters());
   }
 
   @Override
-  public void periodic() 
-  {
+  public void periodic() {
+    // This method will be called once per scheduler run
   }
 }

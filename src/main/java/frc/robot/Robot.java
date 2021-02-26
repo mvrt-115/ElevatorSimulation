@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -21,12 +20,9 @@ public class Robot extends TimedRobot {
 
   private RobotContainer m_robotContainer;
 
-  private static boolean isRobotConnected;
-
-  private static Elevator elevator;
-
-  @SuppressWarnings("unused")
-  private static OI oi;
+  public static Elevator elevator = new Elevator();
+  public static OI oi;
+  
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -38,9 +34,6 @@ public class Robot extends TimedRobot {
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
 
-    isRobotConnected = false;
-
-    elevator = new Elevator();
     oi = new OI();
   }
 
@@ -58,8 +51,6 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
-
-    isRobotConnected = RobotBase.isReal();
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
@@ -108,14 +99,4 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {}
-
-  public static boolean isRobotConnected()
-  {
-    return isRobotConnected;
-  }
-
-  public static Elevator getElevator()
-  {
-    return elevator;
-  }
 }

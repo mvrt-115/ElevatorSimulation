@@ -4,40 +4,40 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.subsystems.ExampleSubsystem;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.Robot;
-import frc.robot.Constants;
-import frc.robot.Hardware;
 
-public class ElevatorBottomCommand extends CommandBase {
-  /** Creates a new ElevatorBottomCommand. */
-  public ElevatorBottomCommand() {
+/** An example command that uses an example subsystem. */
+public class ExampleCommand extends CommandBase {
+  @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
+  private final ExampleSubsystem m_subsystem;
+
+  /**
+   * Creates a new ExampleCommand.
+   *
+   * @param subsystem The subsystem used by this command.
+   */
+  public ExampleCommand(ExampleSubsystem subsystem) {
+    m_subsystem = subsystem;
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(Robot.getElevator());
+    addRequirements(subsystem);
   }
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {
-  }
+  public void initialize() {}
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
-  public void execute() {
-    Robot.getElevator().move(Constants.MOVE.BOTTOM);
-  }
+  public void execute() {}
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted) {
-    SmartDashboard.putNumber("Error", 0);
-    SmartDashboard.putBoolean("Limit Switch", Hardware.limitSwitch.get());
-  }
+  public void end(boolean interrupted) {}
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return Hardware.limitSwitch.get();
+    return false;
   }
 }
